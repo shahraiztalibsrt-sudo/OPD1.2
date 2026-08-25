@@ -1,0 +1,3472 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1">
+
+<title>QCNM OPD Offline</title>
+
+<style>
+
+:root {
+  --bg: #f5f7fb;
+  --card: #ffffff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --border: #dbe2ea;
+  --primary: #166534;
+  --primary-dark: #14532d;
+  --danger: #b91c1c;
+  --success: #166534;
+  --warning: #92400e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.page {
+  max-width: 1180px;
+  margin: auto;
+  padding: 20px;
+}
+
+.hero {
+  background:
+    linear-gradient(
+      135deg,
+      #14532d,
+      #15803d
+    );
+  color: white;
+  padding: 22px;
+  border-radius: 14px;
+  margin-bottom: 16px;
+}
+
+.hero h1 {
+  margin: 0 0 6px;
+}
+
+.hero p {
+  margin: 0;
+  opacity: .9;
+}
+
+.card {
+  background: white;
+  border:
+    1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+
+.section-title {
+  padding: 12px 16px;
+  background: #eef7f0;
+  color: #14532d;
+  font-weight: bold;
+  border-bottom:
+    1px solid var(--border);
+}
+
+.grid {
+  padding: 16px;
+  display: grid;
+  grid-template-columns:
+    repeat(
+      4,
+      minmax(0,1fr)
+    );
+  gap: 14px;
+}
+
+.span-2 {
+  grid-column: span 2;
+}
+
+label {
+  display: block;
+  font-size: 12px;
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 10px;
+  border:
+    1px solid #cbd5e1;
+  border-radius: 8px;
+  font: inherit;
+}
+
+textarea {
+  min-height: 75px;
+}
+
+.syncbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+}
+
+.pill {
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: bold;
+  background: white;
+  border:
+    1px solid var(--border);
+}
+
+.online {
+  color: #166534;
+  background: #ecfdf5;
+}
+
+.offline {
+  color: #991b1b;
+  background: #fef2f2;
+}
+
+.pending {
+  color: #92400e;
+  background: #fffbeb;
+}
+
+.sync-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+button {
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 15px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.primary {
+  background: #166534;
+  color: white;
+}
+
+.secondary {
+  background: #e5e7eb;
+}
+
+.danger {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+button:disabled {
+  opacity: .5;
+}
+
+.status {
+  display: none;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 14px;
+  font-weight: bold;
+}
+
+.status.success {
+  display: block;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status.error {
+  display: block;
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.pending-list {
+  padding: 12px 16px;
+}
+
+.pending-row {
+  display: grid;
+  grid-template-columns:
+    110px
+    1fr
+    2fr
+    auto;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom:
+    1px solid #eee;
+  align-items: center;
+  font-size: 12px;
+}
+
+.sync-error {
+  color: #b91c1c;
+  font-weight: bold;
+  margin-top: 4px;
+}
+
+.attempts {
+  color: #6b7280;
+  margin-top: 3px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  position: sticky;
+  bottom: 0;
+  padding: 14px 0;
+  background:
+    linear-gradient(
+      transparent,
+      var(--bg) 30%
+    );
+}
+
+.footer {
+  text-align: center;
+  color: #777;
+  font-size: 11px;
+  padding: 15px;
+}
+
+@media(max-width:900px) {
+
+  .grid {
+    grid-template-columns:
+      repeat(2,1fr);
+  }
+}
+
+@media(max-width:600px) {
+
+  .page {
+    padding: 10px;
+  }
+
+  .grid {
+    grid-template-columns:
+      1fr;
+  }
+
+  .span-2 {
+    grid-column: auto;
+  }
+
+  .pending-row {
+    grid-template-columns:
+      1fr;
+  }
+
+  .sync-actions {
+    margin-left: 0;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}
+
+
+/* =====================================================
+   V7.1 BATCH SYNC PROGRESS
+===================================================== */
+
+.sync-progress-card {
+  display: none;
+}
+
+.sync-progress-body {
+  padding: 16px;
+}
+
+.sync-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sync-spinner {
+  width: 18px;
+  height: 18px;
+  border: 3px solid #d1fae5;
+  border-top-color: #166534;
+  border-radius: 50%;
+  animation: qcnmSpin .8s linear infinite;
+  flex: 0 0 auto;
+}
+
+@keyframes qcnmSpin {
+  to { transform: rotate(360deg); }
+}
+
+.sync-progress-track {
+  height: 14px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.sync-progress-fill {
+  width: 0%;
+  height: 100%;
+  background: #166534;
+  transition: width .25s ease;
+}
+
+.sync-progress-meta {
+  margin-top: 9px;
+  color: #4b5563;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.recovery-note {
+  display: none;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="page">
+
+<div class="hero">
+
+<h1>
+QCNM OPD Data Entry
+</h1>
+
+<p>
+Offline-first OPD system.
+Records remain on this computer until Google confirms synchronization.
+</p>
+
+</div>
+
+
+<div class="syncbar">
+
+<span
+  id="netPill"
+  class="pill">
+Checking...
+</span>
+
+<span
+  id="serverPill"
+  class="pill">
+Google Sync: Checking...
+</span>
+
+<span
+  id="pendingPill"
+  class="pill pending">
+Pending: 0
+</span>
+
+<span
+  id="syncedPill"
+  class="pill">
+Synced locally: 0
+</span>
+
+
+<div class="sync-actions">
+
+<button
+  type="button"
+  class="primary"
+  id="syncBtn">
+Sync Now
+</button>
+
+<button
+  type="button"
+  class="secondary"
+  id="refreshListsBtn">
+Refresh Lists
+</button>
+
+<button
+  type="button"
+  class="secondary"
+  id="backupBtn">
+Emergency Backup
+</button>
+
+</div>
+
+
+</div>
+
+<div
+  id="recoveryNote"
+  class="recovery-note">
+</div>
+
+<div
+  id="syncProgressCard"
+  class="card sync-progress-card">
+
+  <div class="section-title">
+    Synchronization Progress
+  </div>
+
+  <div class="sync-progress-body">
+
+    <div class="sync-progress-row">
+      <span
+        id="syncProgressSpinner"
+        class="sync-spinner">
+      </span>
+
+      <span id="syncProgressTitle">
+        Preparing synchronization...
+      </span>
+    </div>
+
+    <div class="sync-progress-track">
+      <div
+        id="syncProgressFill"
+        class="sync-progress-fill">
+      </div>
+    </div>
+
+    <div
+      id="syncProgressMeta"
+      class="sync-progress-meta">
+      0 / 0 processed
+    </div>
+
+  </div>
+
+</div>
+
+
+<div class="card">
+
+<div class="section-title">
+Pending Offline Records
+</div>
+
+<div
+  id="pendingList"
+  class="pending-list">
+No pending records.
+</div>
+
+</div>
+
+
+<div
+  id="status"
+  class="status">
+</div>
+
+
+<form id="opdForm">
+
+
+<!-- BASIC -->
+
+<div class="card">
+
+<div class="section-title">
+1. Basic Information
+</div>
+
+<div class="grid">
+
+<div>
+<label>Date</label>
+<input
+  type="date"
+  id="date"
+  name="date">
+</div>
+
+<div>
+<label>Region</label>
+<input
+  id="region"
+  name="region"
+  list="regionList">
+<datalist id="regionList"></datalist>
+</div>
+
+<div class="span-2">
+<label>QCNM Name</label>
+<input
+  id="qcnmName"
+  name="qcnmName"
+  list="clinicList">
+<datalist id="clinicList"></datalist>
+</div>
+
+</div>
+
+</div>
+
+
+<!-- PERSONAL -->
+
+<div class="card">
+
+<div class="section-title">
+2. Personal Information
+</div>
+
+<div class="grid">
+
+<div class="span-2">
+<label>Patient Name</label>
+<input name="patientName">
+</div>
+
+<div>
+<label>CNIC No.</label>
+<input name="cnic">
+</div>
+
+<div>
+<label>Contact No.</label>
+<input name="contact">
+</div>
+
+<div>
+<label>Gender</label>
+<select
+  id="gender"
+  name="gender">
+<option value="">Select</option>
+</select>
+</div>
+
+<div>
+<label>Age</label>
+<input
+  type="number"
+  name="age">
+</div>
+
+<div>
+<label>Temperament of Patient</label>
+<select
+  id="patientTemperament"
+  name="patientTemperament">
+<option value="">Select</option>
+</select>
+</div>
+
+<div>
+<label>Patient Address</label>
+<input name="address">
+</div>
+
+</div>
+
+</div>
+
+
+<!-- VITALS -->
+
+<div class="card">
+
+<div class="section-title">
+3. Patient Vital Signs
+</div>
+
+<div class="grid">
+
+<div>
+<label>Blood Pressure</label>
+<input
+  name="bloodPressure"
+  list="bpList">
+<datalist id="bpList"></datalist>
+</div>
+
+<div>
+<label>Temperature</label>
+<input
+  type="number"
+  step="0.1"
+  name="temperature">
+</div>
+
+<div>
+<label>Weight</label>
+<input
+  type="number"
+  step="0.1"
+  name="weight">
+</div>
+
+</div>
+
+</div>
+
+
+<!-- MEDICAL -->
+
+<div class="card">
+
+<div class="section-title">
+4. Medical Information
+</div>
+
+<div class="grid">
+
+<div class="span-2">
+<label>Sign & Symptoms</label>
+<textarea name="signSymptoms"></textarea>
+</div>
+
+<div class="span-2">
+<label>Diagnosis</label>
+<textarea name="diagnosis"></textarea>
+</div>
+
+<div>
+<label>Temperament of Disease</label>
+<select
+  id="diseaseTemperament"
+  name="diseaseTemperament">
+<option value="">Select</option>
+</select>
+</div>
+
+<div>
+<label>Disease System</label>
+<select
+  id="diseaseSystem"
+  name="diseaseSystem">
+<option value="">Select</option>
+</select>
+</div>
+
+<div>
+<label>History of Chronic Disease</label>
+<input name="chronicDisease">
+</div>
+
+<div>
+<label>Pregnancy</label>
+<select
+  id="pregnancy"
+  name="pregnancy">
+<option value="">N/A / Select</option>
+</select>
+</div>
+
+<div class="span-2">
+<label>Allopathic Medicine A</label>
+<input name="allopathicA">
+</div>
+
+<div class="span-2">
+<label>Allopathic Medicine B</label>
+<input name="allopathicB">
+</div>
+
+</div>
+
+</div>
+
+
+<!-- TREATMENT -->
+
+<div class="card">
+
+<div class="section-title">
+5. Treatment
+</div>
+
+<div class="grid">
+
+<div>
+<label>Symptomatic Medicine 1</label>
+<input
+  name="medicine1"
+  list="medicineList">
+</div>
+
+<div>
+<label>Dosage 1</label>
+<input name="dosage1">
+</div>
+
+<div>
+<label>Symptomatic Medicine 2</label>
+<input
+  name="medicine2"
+  list="medicineList">
+</div>
+
+<div>
+<label>Dosage 2</label>
+<input name="dosage2">
+</div>
+
+<div>
+<label>Causative Medicine 1</label>
+<input
+  name="medicine3"
+  list="medicineList">
+</div>
+
+<div>
+<label>Dosage 3</label>
+<input name="dosage3">
+</div>
+
+<div>
+<label>Causative Medicine 2</label>
+<input
+  name="medicine4"
+  list="medicineList">
+</div>
+
+<div>
+<label>Dosage 4</label>
+<input name="dosage4">
+</div>
+
+<datalist id="medicineList"></datalist>
+
+</div>
+
+</div>
+
+
+<!-- ADVICE -->
+
+<div class="card">
+
+<div class="section-title">
+6. Advice
+</div>
+
+<div class="grid">
+
+<div class="span-2">
+<label>Diet</label>
+<textarea name="diet"></textarea>
+</div>
+
+<div>
+<label>Preventions</label>
+<textarea name="preventions"></textarea>
+</div>
+
+<div>
+<label>Exercise</label>
+<textarea name="exercise"></textarea>
+</div>
+
+</div>
+
+</div>
+
+
+<!-- FEEDBACK -->
+
+<div class="card">
+
+<div class="section-title">
+7. Feedback & Follow-up
+</div>
+
+<div class="grid">
+
+<div>
+<label>Satisfied with Treatment?</label>
+<select
+  class="yesNo"
+  name="feedbackTreatment">
+<option value="">Select</option>
+</select>
+</div>
+
+<div>
+<label>Satisfied with Staff Behaviour?</label>
+<select
+  class="yesNo"
+  name="feedbackStaff">
+<option value="">Select</option>
+</select>
+</div>
+
+<div>
+<label>Using Other Medicine?</label>
+<select
+  class="yesNo"
+  name="feedbackOtherMedicine">
+<option value="">Select</option>
+</select>
+</div>
+
+<div>
+<label>Recommend Qarshi Medicines?</label>
+<select
+  class="yesNo"
+  name="feedbackRecommend">
+<option value="">Select</option>
+</select>
+</div>
+
+<div class="span-2">
+<label>Follow-up Feedback Grading</label>
+<select
+  id="feedbackGrade"
+  name="feedbackGrade">
+<option value="">Select</option>
+</select>
+</div>
+
+<div class="span-2">
+<label>Remarks</label>
+<textarea name="remarks"></textarea>
+</div>
+
+</div>
+
+</div>
+
+
+<div class="actions">
+
+<button
+  type="button"
+  class="secondary"
+  id="clearBtn">
+Clear Patient Fields
+</button>
+
+<button
+  type="submit"
+  class="primary"
+  id="saveBtn">
+Save Record
+</button>
+
+</div>
+
+
+</form>
+
+
+<div class="footer">
+QCNM OPD OFFLINE V7.1 BATCH ·
+100-RECORD BATCH SYNC ·
+ALL FIELDS OPTIONAL
+</div>
+
+</div>
+
+
+<script>
+
+/* ======================================================
+   CONFIGURATION
+====================================================== */
+
+const BUILD =
+  'QCNM-OPD-OFFLINE-V7-CURRENT-BACKEND-COMPATIBLE';
+
+const WEB_APP_URL =
+  'https://script.google.com/macros/s/AKfycbyHwk751apSvKRVaU1Bem1Oie4zXp3GWUT3jNVynrBaBaSw0sl1j8qqQURXV1j0gSYN8g/exec';
+
+const SYNC_KEY =
+  'QCNM-202EF3C4ED9A4A9F8343341B';
+
+
+/*
+  IMPORTANT:
+  Same DB name as previous version.
+  Existing pending records are retained.
+*/
+
+const DB_NAME =
+  'QCNM_OPD_OFFLINE_DB';
+
+const DB_VERSION = 2;
+
+const STORE =
+  'records';
+
+const LOOKUP_CACHE =
+  'qcnm_lookup_cache_v71';
+
+let dbPromise = null;
+let syncing = false;
+const V7_BATCH_SIZE = 100;
+const V7_SESSION_KEY = 'QCNM_SYNC_SESSION_V71';
+
+
+/* ======================================================
+   FALLBACK LISTS
+====================================================== */
+
+const FALLBACK_OPTIONS = {
+
+  medicines: [
+    'Allergex',
+    'Asphaton Tablets',
+    'Asthmina',
+    'Itreefal Kashneez',
+    'Itreefal Ustukhudus',
+    'Itreefal Zamani',
+    'BM-81',
+    'Bukhareen Tablets',
+    'Sparipak',
+    'Corezcol Syrup',
+    'CrampainKARE Capsules',
+    'Fauladi Tonic',
+    'Gestofill Liquid',
+    'Goshina',
+    'Hab-e-Azraqi',
+    'Hab-e-Gurda Tablets',
+    'Hab-e-Kabad Noshadri Tablets',
+    'Hab-e-Muqil Khas Tablets',
+    'Hab-e-Tankar Tablets',
+    'Habis Powder',
+    'Iksir-e-jiger Syrup',
+    'Akseer-e-Jiger Tab',
+    'Akseer-e-Pachish',
+    'Jawarish Amla',
+    'Jawarish Anareen',
+    'Jawarish Kamooni',
+    'Jawarish Shahi',
+    'Jawarish Zarooni',
+    'Kardil Tablet',
+    'Khameera Gaozuban Sada',
+    'Khatooni Syrup',
+    'Kushta Baiza Murgh',
+    'Lal Sharbat',
+    'Lecodine Tablet',
+    'Livakseer Tablet',
+    'Majoon Ard Khurma',
+    'Majoon Dabeed-ul-Ward',
+    'Majoon Najah',
+    'Majoon Philaspha',
+    'Mensofar Tablet',
+    'Musaffeen Liquid',
+    'Musaffeen Tablet',
+    'Pileen Pills',
+    'Piles-X Oil',
+    'Prostnal',
+    'Qarshi Ghutti',
+    'Rahat Tab',
+    'Roghan Aujaa',
+    'Safoof-e-Mughaliz',
+    'Safoof-e-Tabkhir',
+    'Shafai Tablet',
+    'Safoof-e-Jeryan',
+    'Sharbat Toot Siah',
+    'Surficol Syrup',
+    'Surficol Tablet',
+    'Thandak',
+    'Typhex Plus',
+    'Urosinal',
+    'Zanjabeen Capsules',
+    'Zubex Tablet',
+    'FEVER-X',
+    'Antifat',
+    'Pathri Tore',
+    'Toneup Tonic',
+    'Zanjabeen Cap.',
+    'Jaryameen',
+    'Supari Pak',
+    'Taryak e Bukhar',
+    'Arq e Ghulab',
+    'Sozak',
+    'Alkafoon',
+    'Gestofil Tab.',
+    'Tone Up',
+    'Renex',
+    'Reno Tab'
+  ],
+
+  bloodPressures: [
+    '120/80mmHG',
+    '110/70mmHG',
+    '100/60mmHG',
+    '130/90mmHG',
+    '140/100mmHG',
+    '160/120mmHG',
+    '170/90mmHG'
+  ],
+
+  temperaments: [
+    'Bilious',
+    'Melancholic',
+    'Phlegmatic',
+    'Sanguinous'
+  ],
+
+  genders: [
+    'Male',
+    'Female',
+    'Child',
+    'Other'
+  ],
+
+  yesNo: [
+    'Yes',
+    'No'
+  ],
+
+  feedbackGrades: [
+    '1: No improvement',
+    '2: Slight improvement',
+    '3: Satisfactory improvement',
+    '4: Fully cured',
+    '5: Not Responding'
+  ],
+
+  diseaseSystems: [
+    'Respiratory System',
+    'Digestive System',
+    'Nervous System',
+    'Integumentary System',
+    'Cardiovascular System',
+    'Skeletal System',
+    'Endocrine System',
+    'Muscular System',
+    'Reproductive System',
+    'Urinary System',
+    'Lymphatic System'
+  ],
+
+  regions: [],
+  clinics: []
+};
+
+
+/* ======================================================
+   DOM
+====================================================== */
+
+const form =
+  document.getElementById(
+    'opdForm'
+  );
+
+const saveBtn =
+  document.getElementById(
+    'saveBtn'
+  );
+
+const statusBox =
+  document.getElementById(
+    'status'
+  );
+
+
+/* ======================================================
+   START
+====================================================== */
+
+document.addEventListener(
+  'DOMContentLoaded',
+  async function() {
+
+    document
+      .getElementById('clearBtn')
+      .addEventListener(
+        'click',
+        resetPatientFields
+      );
+
+    document
+      .getElementById('syncBtn')
+      .addEventListener(
+        'click',
+        function() {
+          syncAll(true);
+        }
+      );
+
+    document
+      .getElementById(
+        'refreshListsBtn'
+      )
+      .addEventListener(
+        'click',
+        function() {
+          refreshLists(true);
+        }
+      );
+
+    document
+      .getElementById('backupBtn')
+      .addEventListener(
+        'click',
+        exportBackup
+      );
+
+    window.addEventListener(
+      'online',
+      function() {
+
+        updateNetwork();
+
+        pingServer(false);
+
+        syncAll(false);
+      }
+    );
+
+    window.addEventListener(
+      'offline',
+      function() {
+
+        updateNetwork();
+
+        setServerStatus(
+          false,
+          'Google Sync: Offline'
+        );
+      }
+    );
+
+    loadOptions(
+      loadCachedOptions()
+    );
+
+    restoreClinicDefaults();
+
+    if (
+      !document
+        .getElementById('date')
+        .value
+    ) {
+
+      document
+        .getElementById('date')
+        .value =
+        todayLocal();
+    }
+
+    updateNetwork();
+
+    await refreshCounts();
+
+    await renderPending();
+
+    showRecoveryIfNeeded();
+
+    try {
+      if (
+        navigator.storage &&
+        navigator.storage.persist
+      ) {
+        navigator.storage.persist();
+      }
+    } catch (ignore) {}
+
+    if (navigator.onLine) {
+
+      const connected =
+        await pingServer(false);
+
+      if (connected) {
+
+        refreshLists(false);
+
+        syncAll(false);
+      }
+    }
+
+    /*
+      Retry approximately every 30 seconds.
+    */
+    setInterval(
+      async function() {
+
+        if (
+          navigator.onLine &&
+          !syncing
+        ) {
+
+          const connected =
+            await pingServer(false);
+
+          if (connected) {
+            syncAll(false);
+          }
+        }
+
+      },
+      30000
+    );
+  }
+);
+
+
+/* ======================================================
+   SAVE LOCALLY
+====================================================== */
+
+form.addEventListener(
+  'submit',
+  async function(event) {
+
+    event.preventDefault();
+
+    hideStatus();
+
+    saveBtn.disabled = true;
+    saveBtn.textContent =
+      'Saving locally...';
+
+    try {
+
+      const payload =
+        Object.fromEntries(
+          new FormData(form)
+            .entries()
+        );
+
+      const record = {
+        id: makeId(),
+        createdAt:
+          new Date().toISOString(),
+        status: 'pending',
+        retryCount: 0,
+        lastError: '',
+        data: payload
+      };
+
+      await dbPut(record);
+
+      localStorage.setItem(
+        'qcnm_region',
+        payload.region || ''
+      );
+
+      localStorage.setItem(
+        'qcnm_clinic',
+        payload.qcnmName || ''
+      );
+
+      resetPatientFields();
+
+      await refreshCounts();
+      await renderPending();
+
+      showSuccess(
+        'Patient saved safely on this computer.'
+      );
+
+      if (navigator.onLine) {
+        syncAll(false);
+      }
+
+    } catch (error) {
+
+      showError(error);
+
+    } finally {
+
+      saveBtn.disabled = false;
+      saveBtn.textContent =
+        'Save Record';
+    }
+  }
+);
+
+
+/* ======================================================
+   BROWSER CONNECTION
+====================================================== */
+
+function updateNetwork() {
+
+  const pill =
+    document.getElementById(
+      'netPill'
+    );
+
+  if (navigator.onLine) {
+
+    pill.className =
+      'pill online';
+
+    pill.textContent =
+      'Internet: Online';
+
+  } else {
+
+    pill.className =
+      'pill offline';
+
+    pill.textContent =
+      'Internet: Offline';
+  }
+}
+
+
+function setServerStatus(
+  connected,
+  text
+) {
+
+  const pill =
+    document.getElementById(
+      'serverPill'
+    );
+
+  pill.className =
+    connected
+      ? 'pill online'
+      : 'pill offline';
+
+  pill.textContent =
+    text;
+}
+
+
+/* ======================================================
+   JSONP
+
+   Works from file:// without CORS.
+====================================================== */
+
+function jsonpRequest(
+  params,
+  timeoutMs
+) {
+
+  timeoutMs =
+    timeoutMs || 15000;
+
+  return new Promise(
+    function(resolve, reject) {
+
+      const callbackName =
+        '__qcnm_' +
+        Date.now() +
+        '_' +
+        Math.random()
+          .toString(36)
+          .slice(2);
+
+      let finished = false;
+
+      const script =
+        document.createElement(
+          'script'
+        );
+
+      const timer =
+        setTimeout(
+          function() {
+
+            if (finished) {
+              return;
+            }
+
+            finished = true;
+
+            cleanup();
+
+            reject(
+              new Error(
+                'TRANSPORT: Google Apps Script did not respond.'
+              )
+            );
+
+          },
+          timeoutMs
+        );
+
+      function cleanup() {
+
+        clearTimeout(timer);
+
+        try {
+          delete window[
+            callbackName
+          ];
+        } catch (e) {
+          window[
+            callbackName
+          ] = undefined;
+        }
+
+        if (
+          script.parentNode
+        ) {
+          script.remove();
+        }
+      }
+
+      window[
+        callbackName
+      ] =
+        function(data) {
+
+          if (finished) {
+            return;
+          }
+
+          finished = true;
+
+          cleanup();
+
+          resolve(data);
+        };
+
+      script.onerror =
+        function() {
+
+          if (finished) {
+            return;
+          }
+
+          finished = true;
+
+          cleanup();
+
+          reject(
+            new Error(
+              'TRANSPORT: Could not reach Google Apps Script.'
+            )
+          );
+        };
+
+      const allParams =
+        Object.assign(
+          {},
+          params,
+          {
+            syncKey:
+              SYNC_KEY,
+
+            callback:
+              callbackName,
+
+            _: Date.now()
+          }
+        );
+
+      const query =
+        new URLSearchParams(
+          allParams
+        ).toString();
+
+      script.src =
+        WEB_APP_URL +
+        '?' +
+        query;
+
+      document.head.appendChild(
+        script
+      );
+    }
+  );
+}
+
+
+/* ======================================================
+   PING SERVER
+====================================================== */
+
+async function pingServer(
+  showMessage
+) {
+
+  if (!navigator.onLine) {
+
+    setServerStatus(
+      false,
+      'Google Sync: Offline'
+    );
+
+    return false;
+  }
+
+  try {
+
+    const response =
+      await jsonpRequest(
+        {
+          action: 'ping'
+        },
+        12000
+      );
+
+    if (
+      !response ||
+      !response.ok
+    ) {
+
+      throw new Error(
+        response &&
+        response.error
+          ? response.error
+          : 'Server unavailable.'
+      );
+    }
+
+    setServerStatus(
+      true,
+      'Google Sync: Connected'
+    );
+
+    if (showMessage) {
+
+      showSuccess(
+        'Google Sheets connection is working.'
+      );
+    }
+
+    return true;
+
+  } catch (error) {
+
+    setServerStatus(
+      false,
+      'Google Sync: Not Connected'
+    );
+
+    if (showMessage) {
+      showError(error);
+    }
+
+    return false;
+  }
+}
+
+
+/* ======================================================
+   REFRESH LISTS VIA JSONP
+====================================================== */
+
+async function refreshLists(
+  showMessage
+) {
+
+  if (!navigator.onLine) {
+
+    if (showMessage) {
+
+      showError(
+        'Internet is offline. Cached lists remain available.'
+      );
+    }
+
+    return;
+  }
+
+  try {
+
+    const response =
+      await jsonpRequest(
+        {
+          action:
+            'getOptions'
+        },
+        20000
+      );
+
+    if (
+      !response ||
+      !response.ok
+    ) {
+
+      throw new Error(
+        response &&
+        response.error
+          ? response.error
+          : 'Could not load lists.'
+      );
+    }
+
+    localStorage.setItem(
+      LOOKUP_CACHE,
+      JSON.stringify(
+        response.data || {}
+      )
+    );
+
+    loadOptions(
+      response.data || {}
+    );
+
+    restoreClinicDefaults();
+
+    setServerStatus(
+      true,
+      'Google Sync: Connected'
+    );
+
+    if (showMessage) {
+
+      showSuccess(
+        'Lists refreshed from Google Sheets.'
+      );
+    }
+
+  } catch (error) {
+
+    if (showMessage) {
+      showError(error);
+    }
+  }
+}
+
+
+/* ======================================================
+   V7.1 BATCH SYNC ENGINE
+====================================================== */
+
+function createSyncSession(total) {
+  const session = {
+    id: makeId(),
+    total: total,
+    processed: 0,
+    synced: 0,
+    failed: 0,
+    startedAt: new Date().toISOString(),
+    status: 'RUNNING'
+  };
+
+  localStorage.setItem(
+    V7_SESSION_KEY,
+    JSON.stringify(session)
+  );
+
+  return session;
+}
+
+
+function loadSyncSession() {
+  try {
+    return JSON.parse(
+      localStorage.getItem(
+        V7_SESSION_KEY
+      ) || 'null'
+    );
+  } catch (error) {
+    return null;
+  }
+}
+
+
+function saveSyncSession(session) {
+  localStorage.setItem(
+    V7_SESSION_KEY,
+    JSON.stringify(session)
+  );
+}
+
+
+function clearSyncSession() {
+  localStorage.removeItem(
+    V7_SESSION_KEY
+  );
+}
+
+
+function showRecoveryIfNeeded() {
+  const session =
+    loadSyncSession();
+
+  if (
+    !session ||
+    session.status !==
+      'RUNNING'
+  ) {
+    return;
+  }
+
+  const note =
+    document.getElementById(
+      'recoveryNote'
+    );
+
+  note.style.display =
+    'block';
+
+  note.textContent =
+    'Previous synchronization was interrupted. Pending records are still safe locally and will resume automatically.';
+}
+
+
+function showBatchProgress(
+  batchNumber,
+  totalBatches,
+  processed,
+  total,
+  synced,
+  failed,
+  title
+) {
+  const card =
+    document.getElementById(
+      'syncProgressCard'
+    );
+
+  const spinner =
+    document.getElementById(
+      'syncProgressSpinner'
+    );
+
+  card.style.display =
+    'block';
+
+  spinner.style.display =
+    'inline-block';
+
+  document
+    .getElementById(
+      'syncProgressTitle'
+    )
+    .textContent =
+      title ||
+      (
+        'Uploading batch ' +
+        batchNumber +
+        ' of ' +
+        totalBatches
+      );
+
+  const percentage =
+    total > 0
+      ? Math.min(
+          100,
+          Math.round(
+            processed /
+            total *
+            100
+          )
+        )
+      : 0;
+
+  document
+    .getElementById(
+      'syncProgressFill'
+    )
+    .style.width =
+      percentage +
+      '%';
+
+  document
+    .getElementById(
+      'syncProgressMeta'
+    )
+    .textContent =
+      processed +
+      ' / ' +
+      total +
+      ' processed · ' +
+      synced +
+      ' synced · ' +
+      failed +
+      ' pending/failed';
+}
+
+
+function finishBatchProgress(
+  title,
+  processed,
+  total,
+  synced,
+  failed
+) {
+  document
+    .getElementById(
+      'syncProgressCard'
+    )
+    .style.display =
+      'block';
+
+  document
+    .getElementById(
+      'syncProgressSpinner'
+    )
+    .style.display =
+      'none';
+
+  document
+    .getElementById(
+      'syncProgressTitle'
+    )
+    .textContent =
+      title;
+
+  document
+    .getElementById(
+      'syncProgressFill'
+    )
+    .style.width =
+      total > 0
+        ? '100%'
+        : '0%';
+
+  document
+    .getElementById(
+      'syncProgressMeta'
+    )
+    .textContent =
+      processed +
+      ' / ' +
+      total +
+      ' processed · ' +
+      synced +
+      ' synced · ' +
+      failed +
+      ' remain pending';
+}
+
+
+async function checkBatchV7(
+  sessionId
+) {
+  return jsonpRequest(
+    {
+      action: 'checkBatch',
+      sessionId: sessionId
+    },
+    20000
+  );
+}
+
+function batchStateV7(response) {
+  if (!response) {
+    return '';
+  }
+
+  return String(
+    response.status ||
+    response.state ||
+    response.batchStatus ||
+    (
+      response.data &&
+      (
+        response.data.status ||
+        response.data.state ||
+        response.data.batchStatus
+      )
+    ) ||
+    (
+      response.checkpoint &&
+      (
+        response.checkpoint.status ||
+        response.checkpoint.state
+      )
+    ) ||
+    ''
+  ).toUpperCase();
+}
+
+function batchNumberV7(
+  response,
+  key
+) {
+  const values = [
+    response && response[key],
+    response && response.data && response.data[key],
+    response && response.checkpoint && response.checkpoint[key],
+    response && response.result && response.result[key]
+  ];
+
+  for (
+    const value
+    of values
+  ) {
+    const n = Number(value);
+
+    if (
+      value !== '' &&
+      value != null &&
+      Number.isFinite(n)
+    ) {
+      return n;
+    }
+  }
+
+  return 0;
+}
+
+async function waitForBatchV7(
+  sessionId
+) {
+  let last = null;
+
+  for (
+    let attempt = 0;
+    attempt < 24;
+    attempt++
+  ) {
+    await sleep(
+      attempt === 0
+        ? 1300
+        : 1700
+    );
+
+    try {
+      last =
+        await checkBatchV7(
+          sessionId
+        );
+    } catch (error) {
+      if (
+        attempt < 5
+      ) {
+        continue;
+      }
+
+      throw error;
+    }
+
+    const state =
+      batchStateV7(last);
+
+    if (
+      state === 'COMPLETED' ||
+      state === 'COMPLETE' ||
+      state === 'SUCCESS' ||
+      state === 'SUCCEEDED' ||
+      state === 'SYNCED' ||
+      (
+        last &&
+        last.completed === true
+      )
+    ) {
+      return last;
+    }
+
+    if (
+      state === 'FAILED' ||
+      state === 'ERROR' ||
+      state === 'REJECTED'
+    ) {
+      const message =
+        (
+          last &&
+          (
+            last.error ||
+            (
+              last.data &&
+              last.data.error
+            ) ||
+            (
+              last.checkpoint &&
+              last.checkpoint.error
+            )
+          )
+        ) ||
+        'Google Apps Script reported that the batch failed.';
+
+      throw new Error(
+        'SERVER: ' +
+        message
+      );
+    }
+  }
+
+  throw new Error(
+    'TRANSPORT: Batch was sent but Google did not confirm completion. Last response: ' +
+    (
+      last
+        ? JSON.stringify(last).slice(0, 600)
+        : 'none'
+    )
+  );
+}
+
+
+function postBatchV71(
+  sessionId,
+  records
+) {
+  return new Promise(
+    function(resolve, reject) {
+
+      const frameName =
+        'qcnm_batch_' +
+        sessionId.replace(
+          /[^A-Za-z0-9]/g,
+          ''
+        ) +
+        '_' +
+        Date.now();
+
+      const iframe =
+        document.createElement(
+          'iframe'
+        );
+
+      iframe.name =
+        frameName;
+
+      iframe.style.display =
+        'none';
+
+      document.body.appendChild(
+        iframe
+      );
+
+      const postForm =
+        document.createElement(
+          'form'
+        );
+
+      postForm.method =
+        'POST';
+
+      postForm.action =
+        WEB_APP_URL;
+
+      postForm.target =
+        frameName;
+
+      postForm.style.display =
+        'none';
+
+      const values = {
+        action:
+          'syncBatch',
+        syncKey:
+          SYNC_KEY,
+        sessionId:
+          sessionId,
+        payload:
+          JSON.stringify({
+            records:
+              records.map(
+                function(record) {
+                  return {
+                    id:
+                      record.id,
+                    data:
+                      record.data ||
+                      {}
+                  };
+                }
+              )
+          })
+      };
+
+      Object.keys(values)
+        .forEach(
+          function(name) {
+
+            const input =
+              document.createElement(
+                'input'
+              );
+
+            input.type =
+              'hidden';
+
+            input.name =
+              name;
+
+            input.value =
+              values[name];
+
+            postForm.appendChild(
+              input
+            );
+          }
+        );
+
+      document.body.appendChild(
+        postForm
+      );
+
+      try {
+        postForm.submit();
+      } catch (error) {
+        postForm.remove();
+        iframe.remove();
+
+        reject(
+          new Error(
+            'TRANSPORT: Could not submit the batch to Google Apps Script.'
+          )
+        );
+
+        return;
+      }
+
+      setTimeout(
+        function() {
+          resolve();
+
+          setTimeout(
+            function() {
+
+              if (
+                postForm.parentNode
+              ) {
+                postForm.remove();
+              }
+
+              if (
+                iframe.parentNode
+              ) {
+                iframe.remove();
+              }
+
+            },
+            30000
+          );
+        },
+        500
+      );
+    }
+  );
+}
+
+
+async function markRecordSyncedV71(
+  record,
+  serverInfo
+) {
+  record.status =
+    'synced';
+
+  record.syncedAt =
+    new Date()
+      .toISOString();
+
+  record.serverRow =
+    serverInfo &&
+    serverInfo.row
+      ? serverInfo.row
+      : '';
+
+  record.serialNo =
+    serverInfo &&
+    serverInfo.serialNo
+      ? serverInfo.serialNo
+      : '';
+
+  record.lastError =
+    '';
+
+  await dbPut(record);
+}
+
+
+async function markRecordPendingErrorV71(
+  record,
+  message
+) {
+  record.status =
+    'pending';
+
+  record.retryCount =
+    (
+      record.retryCount ||
+      0
+    ) + 1;
+
+  record.lastError =
+    message ||
+    'Synchronization was not confirmed.';
+
+  await dbPut(record);
+}
+
+
+async function processBatchV71(
+  session,
+  batch
+) {
+  const batchSessionId =
+    session.id +
+    '-batch-' +
+    Date.now() +
+    '-' +
+    Math.random()
+      .toString(36)
+      .slice(2);
+
+  await postBatchV71(
+    batchSessionId,
+    batch
+  );
+
+  const confirmation =
+    await waitForBatchV7(
+      batchSessionId
+    );
+
+  const failed =
+    batchNumberV7(
+      confirmation,
+      'failed'
+    );
+
+  if (
+    failed > 0
+  ) {
+    for (
+      const record
+      of batch
+    ) {
+      await markRecordPendingErrorV71(
+        record,
+        'SERVER: Google completed the batch but reported failed record(s). This batch remains pending for safety.'
+      );
+    }
+
+    return {
+      synced: 0,
+      failed: batch.length
+    };
+  }
+
+  for (
+    const record
+    of batch
+  ) {
+    await markRecordSyncedV71(
+      record,
+      {}
+    );
+  }
+
+  return {
+    synced: batch.length,
+    failed: 0
+  };
+}
+
+
+async function syncAll(
+  showMessage
+) {
+  if (syncing) {
+    return;
+  }
+
+  if (!navigator.onLine) {
+    if (showMessage) {
+      showError(
+        'Internet is offline. Records remain safely stored on this computer.'
+      );
+    }
+
+    return;
+  }
+
+  syncing = true;
+
+  const button =
+    document.getElementById(
+      'syncBtn'
+    );
+
+  button.disabled =
+    true;
+
+  button.textContent =
+    'Syncing...';
+
+  try {
+    const connected =
+      await pingServer(false);
+
+    if (!connected) {
+      throw new Error(
+        'TRANSPORT: Google Apps Script is not reachable.'
+      );
+    }
+
+    const pending =
+      await dbGetByStatus(
+        'pending'
+      );
+
+    pending.sort(
+      function(a, b) {
+        return String(
+          a.createdAt ||
+          ''
+        ).localeCompare(
+          String(
+            b.createdAt ||
+            ''
+          )
+        );
+      }
+    );
+
+    if (!pending.length) {
+      clearSyncSession();
+
+      document
+        .getElementById(
+          'recoveryNote'
+        )
+        .style.display =
+          'none';
+
+      if (showMessage) {
+        showSuccess(
+          'Nothing pending. All records are synchronized.'
+        );
+      }
+
+      return;
+    }
+
+    const session =
+      createSyncSession(
+        pending.length
+      );
+
+    const totalBatches =
+      Math.ceil(
+        pending.length /
+        V7_BATCH_SIZE
+      );
+
+    let processed = 0;
+    let synced = 0;
+    let failed = 0;
+
+    for (
+      let offset = 0,
+          batchNumber = 1;
+      offset < pending.length;
+      offset += V7_BATCH_SIZE,
+      batchNumber++
+    ) {
+      if (!navigator.onLine) {
+        throw new Error(
+          'TRANSPORT: Internet connection was lost during synchronization.'
+        );
+      }
+
+      const batch =
+        pending.slice(
+          offset,
+          offset +
+          V7_BATCH_SIZE
+        );
+
+      showBatchProgress(
+        batchNumber,
+        totalBatches,
+        processed,
+        pending.length,
+        synced,
+        failed,
+        'Uploading batch ' +
+        batchNumber +
+        ' of ' +
+        totalBatches +
+        ' (' +
+        batch.length +
+        ' record' +
+        (
+          batch.length === 1
+            ? ''
+            : 's'
+        ) +
+        ')'
+      );
+
+      const result =
+        await processBatchV71(
+          session,
+          batch
+        );
+
+      processed +=
+        batch.length;
+
+      synced +=
+        result.synced;
+
+      failed +=
+        result.failed;
+
+      session.processed =
+        processed;
+
+      session.synced =
+        synced;
+
+      session.failed =
+        failed;
+
+      saveSyncSession(
+        session
+      );
+
+      showBatchProgress(
+        batchNumber,
+        totalBatches,
+        processed,
+        pending.length,
+        synced,
+        failed,
+        'Batch ' +
+        batchNumber +
+        ' of ' +
+        totalBatches +
+        ' completed'
+      );
+
+      await refreshCounts();
+      await renderPending();
+    }
+
+    session.status =
+      'COMPLETED';
+
+    saveSyncSession(
+      session
+    );
+
+    clearSyncSession();
+
+    document
+      .getElementById(
+        'recoveryNote'
+      )
+      .style.display =
+        'none';
+
+    const remaining =
+      (
+        await dbGetByStatus(
+          'pending'
+        )
+      ).length;
+
+    finishBatchProgress(
+      remaining === 0
+        ? 'Synchronization complete'
+        : 'Synchronization finished with pending records',
+      processed,
+      pending.length,
+      synced,
+      remaining
+    );
+
+    await refreshCounts();
+    await renderPending();
+
+    if (
+      remaining === 0
+    ) {
+      showSuccess(
+        'Sync complete. ' +
+        synced +
+        ' record(s) confirmed by Google Sheets.'
+      );
+    } else {
+      showError(
+        synced +
+        ' record(s) synchronized. ' +
+        remaining +
+        ' remain pending and will retry automatically.'
+      );
+    }
+
+  } catch (error) {
+    const current =
+      loadSyncSession();
+
+    if (current) {
+      current.status =
+        'RUNNING';
+
+      current.lastError =
+        error &&
+        error.message
+          ? error.message
+          : String(error);
+
+      saveSyncSession(
+        current
+      );
+    }
+
+    showRecoveryIfNeeded();
+
+    showError(error);
+
+  } finally {
+    syncing =
+      false;
+
+    button.disabled =
+      false;
+
+    button.textContent =
+      'Sync Now';
+  }
+}
+
+
+/* ======================================================
+   DATABASE
+====================================================== */
+
+function openDb() {
+
+  if (dbPromise) {
+    return dbPromise;
+  }
+
+  dbPromise =
+    new Promise(
+      function(resolve,reject) {
+
+        const request =
+          indexedDB.open(
+            DB_NAME,
+            DB_VERSION
+          );
+
+        request.onupgradeneeded =
+          function() {
+
+            const db =
+              request.result;
+
+            let store;
+
+            if (
+              !db.objectStoreNames
+                .contains(STORE)
+            ) {
+
+              store =
+                db.createObjectStore(
+                  STORE,
+                  {
+                    keyPath: 'id'
+                  }
+                );
+
+            } else {
+
+              store =
+                request
+                  .transaction
+                  .objectStore(
+                    STORE
+                  );
+            }
+
+            if (
+              !store.indexNames
+                .contains(
+                  'status'
+                )
+            ) {
+
+              store.createIndex(
+                'status',
+                'status',
+                {
+                  unique: false
+                }
+              );
+            }
+
+            if (
+              !store.indexNames
+                .contains(
+                  'createdAt'
+                )
+            ) {
+
+              store.createIndex(
+                'createdAt',
+                'createdAt',
+                {
+                  unique: false
+                }
+              );
+            }
+          };
+
+        request.onsuccess =
+          function() {
+
+            resolve(
+              request.result
+            );
+          };
+
+        request.onerror =
+          function() {
+
+            reject(
+              request.error ||
+              new Error(
+                'Could not open offline database.'
+              )
+            );
+          };
+      }
+    );
+
+  return dbPromise;
+}
+
+
+async function dbPut(record) {
+
+  const db =
+    await openDb();
+
+  return dbRequest(
+    db,
+    'readwrite',
+    function(store) {
+      return store.put(record);
+    }
+  );
+}
+
+
+async function dbDelete(id) {
+
+  const db =
+    await openDb();
+
+  return dbRequest(
+    db,
+    'readwrite',
+    function(store) {
+      return store.delete(id);
+    }
+  );
+}
+
+
+async function dbGetAll() {
+
+  const db =
+    await openDb();
+
+  return dbRequest(
+    db,
+    'readonly',
+    function(store) {
+      return store.getAll();
+    }
+  );
+}
+
+
+async function dbGetByStatus(
+  status
+) {
+
+  const db =
+    await openDb();
+
+  return new Promise(
+    function(resolve,reject) {
+
+      const tx =
+        db.transaction(
+          STORE,
+          'readonly'
+        );
+
+      const store =
+        tx.objectStore(
+          STORE
+        );
+
+      const request =
+        store
+          .index('status')
+          .getAll(status);
+
+      request.onsuccess =
+        function() {
+
+          resolve(
+            request.result || []
+          );
+        };
+
+      request.onerror =
+        function() {
+
+          reject(
+            request.error ||
+            new Error(
+              'Could not read local records.'
+            )
+          );
+        };
+    }
+  );
+}
+
+
+function dbRequest(
+  db,
+  mode,
+  callback
+) {
+
+  return new Promise(
+    function(resolve,reject) {
+
+      const tx =
+        db.transaction(
+          STORE,
+          mode
+        );
+
+      const store =
+        tx.objectStore(
+          STORE
+        );
+
+      const request =
+        callback(store);
+
+      request.onsuccess =
+        function() {
+          resolve(
+            request.result
+          );
+        };
+
+      request.onerror =
+        function() {
+          reject(
+            request.error
+          );
+        };
+    }
+  );
+}
+
+
+/* ======================================================
+   COUNTS / PENDING LIST
+====================================================== */
+
+async function refreshCounts() {
+
+  const pending =
+    await dbGetByStatus(
+      'pending'
+    );
+
+  const synced =
+    await dbGetByStatus(
+      'synced'
+    );
+
+  document
+    .getElementById(
+      'pendingPill'
+    )
+    .textContent =
+    'Pending: ' +
+    pending.length;
+
+  document
+    .getElementById(
+      'syncedPill'
+    )
+    .textContent =
+    'Synced locally: ' +
+    synced.length;
+}
+
+
+async function renderPending() {
+
+  const container =
+    document.getElementById(
+      'pendingList'
+    );
+
+  const pending =
+    await dbGetByStatus(
+      'pending'
+    );
+
+  if (!pending.length) {
+
+    container.textContent =
+      'No pending records.';
+
+    return;
+  }
+
+  pending.sort(
+    function(a,b) {
+
+      return String(
+        b.createdAt || ''
+      ).localeCompare(
+        String(
+          a.createdAt || ''
+        )
+      );
+    }
+  );
+
+  container.innerHTML = '';
+
+  pending.forEach(
+    function(record) {
+
+      const row =
+        document.createElement(
+          'div'
+        );
+
+      row.className =
+        'pending-row';
+
+
+      const date =
+        document.createElement(
+          'div'
+        );
+
+      date.textContent =
+        record.data.date ||
+        'No date';
+
+
+      const patient =
+        document.createElement(
+          'div'
+        );
+
+      patient.textContent =
+        record.data.patientName ||
+        'Unnamed patient';
+
+
+      const details =
+        document.createElement(
+          'div'
+        );
+
+      const clinic =
+        document.createElement(
+          'strong'
+        );
+
+      clinic.textContent =
+        record.data.qcnmName ||
+        record.data.region ||
+        'No clinic';
+
+      details.appendChild(
+        clinic
+      );
+
+
+      if (
+        record.lastError
+      ) {
+
+        const error =
+          document.createElement(
+            'div'
+          );
+
+        error.className =
+          'sync-error';
+
+        error.textContent =
+          'Sync error: ' +
+          record.lastError;
+
+        details.appendChild(
+          error
+        );
+
+
+        const attempts =
+          document.createElement(
+            'div'
+          );
+
+        attempts.className =
+          'attempts';
+
+        attempts.textContent =
+          'Attempts: ' +
+          (
+            record.retryCount ||
+            0
+          );
+
+        details.appendChild(
+          attempts
+        );
+      }
+
+
+      const remove =
+        document.createElement(
+          'button'
+        );
+
+      remove.type = 'button';
+
+      remove.className =
+        'danger';
+
+      remove.textContent =
+        'Remove Pending';
+
+      remove.onclick =
+        async function() {
+
+          if (
+            !confirm(
+              'Remove this unsynced local patient? Only do this if you have confirmed it already exists in Google Sheets.'
+            )
+          ) {
+            return;
+          }
+
+          await dbDelete(
+            record.id
+          );
+
+          await refreshCounts();
+
+          await renderPending();
+        };
+
+
+      row.append(
+        date,
+        patient,
+        details,
+        remove
+      );
+
+      container.appendChild(
+        row
+      );
+    }
+  );
+}
+
+
+/* ======================================================
+   LOOKUPS
+====================================================== */
+
+function loadCachedOptions() {
+
+  try {
+
+    return JSON.parse(
+      localStorage.getItem(
+        LOOKUP_CACHE
+      ) || '{}'
+    );
+
+  } catch (e) {
+
+    return {};
+  }
+}
+
+
+function useList(
+  serverValue,
+  fallback
+) {
+
+  return (
+    Array.isArray(serverValue) &&
+    serverValue.length
+  )
+    ? serverValue
+    : fallback;
+}
+
+
+function loadOptions(data) {
+
+  data = data || {};
+
+  fillDatalist(
+    'regionList',
+    useList(
+      data.regions,
+      FALLBACK_OPTIONS.regions
+    )
+  );
+
+  fillDatalist(
+    'clinicList',
+    useList(
+      data.clinics,
+      FALLBACK_OPTIONS.clinics
+    )
+  );
+
+  fillDatalist(
+    'bpList',
+    useList(
+      data.bloodPressures,
+      FALLBACK_OPTIONS.bloodPressures
+    )
+  );
+
+  fillDatalist(
+    'medicineList',
+    useList(
+      data.medicines,
+      FALLBACK_OPTIONS.medicines
+    )
+  );
+
+  fillSelect(
+    'gender',
+    useList(
+      data.genders,
+      FALLBACK_OPTIONS.genders
+    )
+  );
+
+  fillSelect(
+    'patientTemperament',
+    useList(
+      data.temperaments,
+      FALLBACK_OPTIONS.temperaments
+    )
+  );
+
+  fillSelect(
+    'diseaseTemperament',
+    useList(
+      data.temperaments,
+      FALLBACK_OPTIONS.temperaments
+    )
+  );
+
+  fillSelect(
+    'diseaseSystem',
+    useList(
+      data.diseaseSystems,
+      FALLBACK_OPTIONS.diseaseSystems
+    )
+  );
+
+  fillSelect(
+    'pregnancy',
+    useList(
+      data.yesNo,
+      FALLBACK_OPTIONS.yesNo
+    )
+  );
+
+  fillSelect(
+    'feedbackGrade',
+    useList(
+      data.feedbackGrades,
+      FALLBACK_OPTIONS.feedbackGrades
+    )
+  );
+
+  const yn =
+    useList(
+      data.yesNo,
+      FALLBACK_OPTIONS.yesNo
+    );
+
+  document
+    .querySelectorAll(
+      '.yesNo'
+    )
+    .forEach(
+      function(select) {
+        fillSelectElement(
+          select,
+          yn
+        );
+      }
+    );
+}
+
+
+function fillDatalist(
+  id,
+  values
+) {
+
+  const el =
+    document.getElementById(id);
+
+  el.innerHTML = '';
+
+  (values || [])
+    .forEach(
+      function(value) {
+
+        const option =
+          document.createElement(
+            'option'
+          );
+
+        option.value = value;
+
+        el.appendChild(option);
+      }
+    );
+}
+
+
+function fillSelect(
+  id,
+  values
+) {
+
+  fillSelectElement(
+    document.getElementById(id),
+    values
+  );
+}
+
+
+function fillSelectElement(
+  select,
+  values
+) {
+
+  const current =
+    select.value;
+
+  const first =
+    select.options.length
+      ? select.options[0]
+          .cloneNode(true)
+      : null;
+
+  select.innerHTML = '';
+
+  if (first) {
+    select.appendChild(first);
+  }
+
+  (values || [])
+    .forEach(
+      function(value) {
+
+        const option =
+          document.createElement(
+            'option'
+          );
+
+        option.value = value;
+
+        option.textContent = value;
+
+        select.appendChild(option);
+      }
+    );
+
+  if (
+    Array.from(
+      select.options
+    ).some(
+      function(o) {
+        return o.value === current;
+      }
+    )
+  ) {
+    select.value = current;
+  }
+}
+
+
+/* ======================================================
+   REGION / CLINIC
+====================================================== */
+
+function restoreClinicDefaults() {
+
+  const region =
+    localStorage.getItem(
+      'qcnm_region'
+    );
+
+  const clinic =
+    localStorage.getItem(
+      'qcnm_clinic'
+    );
+
+  if (region) {
+
+    document
+      .getElementById('region')
+      .value =
+      region;
+  }
+
+  if (clinic) {
+
+    document
+      .getElementById(
+        'qcnmName'
+      )
+      .value =
+      clinic;
+  }
+}
+
+
+function resetPatientFields() {
+
+  const date =
+    document
+      .getElementById('date')
+      .value ||
+    todayLocal();
+
+  const region =
+    document
+      .getElementById('region')
+      .value;
+
+  const clinic =
+    document
+      .getElementById(
+        'qcnmName'
+      )
+      .value;
+
+  form.reset();
+
+  document
+    .getElementById('date')
+    .value =
+    date;
+
+  document
+    .getElementById('region')
+    .value =
+    region;
+
+  document
+    .getElementById(
+      'qcnmName'
+    )
+    .value =
+    clinic;
+}
+
+
+/* ======================================================
+   BACKUP
+====================================================== */
+
+async function exportBackup() {
+
+  const records =
+    await dbGetAll();
+
+  const content = {
+    build: BUILD,
+    exportedAt:
+      new Date().toISOString(),
+    records: records
+  };
+
+  const blob =
+    new Blob(
+      [
+        JSON.stringify(
+          content,
+          null,
+          2
+        )
+      ],
+      {
+        type:
+          'application/json'
+      }
+    );
+
+  const link =
+    document.createElement(
+      'a'
+    );
+
+  link.href =
+    URL.createObjectURL(blob);
+
+  link.download =
+    'QCNM_OPD_Backup_' +
+    todayLocal() +
+    '.json';
+
+  document.body.appendChild(
+    link
+  );
+
+  link.click();
+
+  setTimeout(
+    function() {
+
+      URL.revokeObjectURL(
+        link.href
+      );
+
+      link.remove();
+
+    },
+    1000
+  );
+
+  showSuccess(
+    'Backup downloaded.'
+  );
+}
+
+
+/* ======================================================
+   HELPERS
+====================================================== */
+
+function makeId() {
+
+  if (
+    window.crypto &&
+    crypto.randomUUID
+  ) {
+
+    return crypto.randomUUID();
+  }
+
+  return (
+    'qcnm-' +
+    Date.now() +
+    '-' +
+    Math.random()
+      .toString(36)
+      .slice(2)
+  );
+}
+
+
+function sleep(ms) {
+
+  return new Promise(
+    function(resolve) {
+      setTimeout(resolve, ms);
+    }
+  );
+}
+
+
+function todayLocal() {
+
+  const d =
+    new Date();
+
+  return (
+    d.getFullYear() +
+    '-' +
+    String(
+      d.getMonth() + 1
+    ).padStart(2, '0') +
+    '-' +
+    String(
+      d.getDate()
+    ).padStart(2, '0')
+  );
+}
+
+
+function showSuccess(message) {
+
+  statusBox.className =
+    'status success';
+
+  statusBox.textContent =
+    message;
+}
+
+
+function showError(error) {
+
+  statusBox.className =
+    'status error';
+
+  statusBox.textContent =
+    error &&
+    error.message
+      ? error.message
+      : String(error);
+}
+
+
+function hideStatus() {
+
+  statusBox.className =
+    'status';
+
+  statusBox.textContent = '';
+}
+
+</script>
+
+</body>
+</html>
