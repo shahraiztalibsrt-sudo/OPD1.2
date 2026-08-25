@@ -1,4 +1,5 @@
 {
-  "version": "7.2.0",
-  "build": "20260825"
+  "version": "7.1.0",
+  "build": "20260825",
+  "message": "Initial QCNM OPD PWA release"
 }
