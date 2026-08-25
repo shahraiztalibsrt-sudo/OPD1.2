@@ -1106,11 +1106,126 @@ const statusBox =
 /* ======================================================
    START
 ====================================================== */
+/* ======================================================
+   APP UPDATE CHECK
+====================================================== */
 
+
+async function checkAppUpdate(){
+
+  try {
+
+
+    const response = await fetch(
+      "version.json?v=" + Date.now()
+    );
+
+
+    const latest =
+      await response.json();
+
+
+
+    if(
+      latest.version !== APP_VERSION
+    ){
+
+
+      const update =
+        confirm(
+
+          "New QCNM OPD version available: " +
+          latest.version +
+          "\n\nUpdate now?"
+
+        );
+
+
+      if(update){
+
+        clearAppCache();
+
+      }
+
+
+    }
+
+
+  }
+
+  catch(error){
+
+    console.log(
+      "Update check skipped",
+      error
+    );
+
+  }
+
+}
+
+
+
+
+async function clearAppCache(){
+
+
+  if(
+    "serviceWorker" in navigator
+  ){
+
+    const registrations =
+      await navigator
+      .serviceWorker
+      .getRegistrations();
+
+
+    for(
+      const registration
+      of registrations
+    ){
+
+      await registration.unregister();
+
+    }
+
+  }
+
+
+
+  if(
+    window.caches
+  ){
+
+    const keys =
+      await caches.keys();
+
+
+    for(
+      const key
+      of keys
+    ){
+
+      await caches.delete(
+        key
+      );
+
+    }
+
+  }
+
+
+  location.reload(
+    true
+  );
+
+
+}
 document.addEventListener(
   'DOMContentLoaded',
   async function() {
 
+    checkAppUpdate();
     document
       .getElementById('clearBtn')
       .addEventListener(
