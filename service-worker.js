@@ -1,4 +1,4 @@
-const CACHE_NAME = "qcnm-opd-v1";
+const CACHE_NAME = "qcnm-opd-v2";
 
 const FILES_TO_CACHE = [
   "./",
