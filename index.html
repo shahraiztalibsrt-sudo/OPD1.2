@@ -2,7 +2,9 @@
 <html lang="en">
 
 <head>
+<link rel="manifest" href="manifest.json">
 
+<meta name="theme-color" content="#166534">
 <meta charset="UTF-8">
 
 <meta
@@ -3467,6 +3469,16 @@ function hideStatus() {
 }
 
 </script>
+<script>
 
+if ("serviceWorker" in navigator) {
+
+  navigator.serviceWorker.register(
+    "service-worker.js"
+  );
+
+}
+
+</script>
 </body>
 </html>
