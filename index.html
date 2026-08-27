@@ -896,11 +896,14 @@ Save Record
 
 
 <div class="footer">
-QCNM OPD OFFLINE V7.1 BATCH ·
-100-RECORD BATCH SYNC ·
-ALL FIELDS OPTIONAL
-</div>
 
+QCNM OPD Offline
+<br>
+
+Version:
+<span id="appVersion"></span>
+
+</div>
 </div>
 
 
@@ -1275,6 +1278,9 @@ async function clearAppCache(){
 document.addEventListener(
   'DOMContentLoaded',
   async function() {
+    document.getElementById(
+  "appVersion"
+).textContent = APP_VERSION;
 
     checkAppUpdate();
     document
