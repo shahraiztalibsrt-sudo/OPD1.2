@@ -394,7 +394,7 @@ Checking...
 <span
   id="serverPill"
   class="pill">
-Google Sync: Checking...
+HMS Sync: Checking...
 </span>
 
 <span
@@ -912,9 +912,9 @@ Version:
 /* ======================================================
    CONFIGURATION
 ====================================================== */
-const APP_VERSION = "7.4.0";
+const APP_VERSION = "7.5.0";
 const BUILD =
-  'QCNM-OPD-OFFLINE-V7-CURRENT-BACKEND-COMPATIBLE';
+  'QCNM-OPD-OFFLINE-V7-HMS-CONNECTED';
 
 const WEB_APP_URL =
   'https://script.google.com/macros/s/AKfycbyHwk751apSvKRVaU1Bem1Oie4zXp3GWUT3jNVynrBaBaSw0sl1j8qqQURXV1j0gSYN8g/exec';
@@ -922,6 +922,16 @@ const WEB_APP_URL =
 const SYNC_KEY =
   'QCNM-202EF3C4ED9A4A9F8343341B';
 
+const HMS_URL =
+  "https://7q382qz8-3000.inc1.devtunnels.ms/api/lcnm/opd";
+
+
+const HMS_CLINIC_ID =
+  "cmrn5bavm000ertgqih8kuh47";
+
+
+const HMS_STAFF_ID =
+  "cmrn5bca7002mrtgqojwgwpv8";
 
 /*
   IMPORTANT:
@@ -1323,7 +1333,7 @@ document.addEventListener(
 
         updateNetwork();
 
-        pingServer(false);
+        pingHMSServer(false);
 
         syncAll(false);
       }
@@ -1337,7 +1347,7 @@ document.addEventListener(
 
         setServerStatus(
           false,
-          'Google Sync: Offline'
+          'HMS Sync: Offline'
         );
       }
     );
@@ -1380,7 +1390,7 @@ document.addEventListener(
     if (navigator.onLine) {
 
       const connected =
-        await pingServer(false);
+        await pingHMSServer(false);
 
       if (connected) {
 
@@ -1402,7 +1412,7 @@ document.addEventListener(
         ) {
 
           const connected =
-            await pingServer(false);
+            await pingHMSServer(false);
 
           if (connected) {
             syncAll(false);
@@ -1721,11 +1731,6 @@ async function pingServer(
           : 'Server unavailable.'
       );
     }
-
-    setServerStatus(
-      true,
-      'Google Sync: Connected'
-    );
 
     if (showMessage) {
 
@@ -2263,6 +2268,8 @@ function postBatchV71(
           })
       };
 
+
+
       Object.keys(values)
         .forEach(
           function(name) {
@@ -2336,6 +2343,243 @@ function postBatchV71(
 }
 
 
+
+
+
+/* ======================================================
+   HMS CONNECTION / SYNC
+====================================================== */
+
+function normalizeHMSGender(value) {
+  const gender = String(value || '').trim().toUpperCase();
+
+  if (
+    gender === 'MALE' ||
+    gender === 'FEMALE' ||
+    gender === 'CHILD' ||
+    gender === 'OTHER'
+  ) {
+    return gender;
+  }
+
+  return 'MALE';
+}
+
+
+function joinHMSValues(first, second) {
+  return [first, second]
+    .map(function(value) {
+      return String(value || '').trim();
+    })
+    .filter(Boolean)
+    .join(' | ');
+}
+
+
+function mapRecordToHMS(record) {
+  const d = record.data || {};
+
+  return {
+    clinicId: HMS_CLINIC_ID,
+    staffId: HMS_STAFF_ID,
+
+    patientName:
+      String(d.patientName || '').trim() || 'Unnamed Patient',
+
+    patientCNIC:
+      String(d.cnic || '').trim(),
+
+    patientContact:
+      String(d.contact || '').trim(),
+
+    patientGender:
+      normalizeHMSGender(d.gender),
+
+    patientAge:
+      String(d.age || '').trim(),
+
+    patientAddress:
+      String(d.address || '').trim(),
+
+    temperature:
+      String(d.temperature || '').trim(),
+
+    bloodPressure:
+      String(d.bloodPressure || '').trim(),
+
+    weight:
+      String(d.weight || '').trim(),
+
+    sugar:
+      String(d.sugar || '').trim(),
+
+    signsSymptoms:
+      String(d.signSymptoms || '').trim(),
+
+    diagnosis:
+      String(d.diagnosis || '').trim(),
+
+    diseaseTemperament:
+      String(d.diseaseTemperament || '').trim(),
+
+    diseaseSystem:
+      String(d.diseaseSystem || '').trim(),
+
+    chronicDiseaseHistory:
+      String(d.chronicDisease || '').trim(),
+
+    pregnancy:
+      String(d.pregnancy || '').trim().toLowerCase() === 'yes',
+
+    allopathicMedicine:
+      joinHMSValues(d.allopathicA, d.allopathicB),
+
+    symptomaticMedicine:
+      joinHMSValues(d.medicine1, d.medicine2),
+
+    symptomaticDosage:
+      joinHMSValues(d.dosage1, d.dosage2),
+
+    causativeMedicine:
+      joinHMSValues(d.medicine3, d.medicine4),
+
+    causativeDosage:
+      joinHMSValues(d.dosage3, d.dosage4),
+
+    diet:
+      String(d.diet || '').trim(),
+
+    prevention:
+      String(d.preventions || '').trim(),
+
+    exercise:
+      String(d.exercise || '').trim(),
+
+    clientRef:
+      record.id,
+
+    // Sent for forward compatibility. The current HMS route may ignore it.
+    date:
+      d.date || ''
+  };
+}
+
+
+async function postOneRecordHMS(record) {
+  const response = await fetch(
+    HMS_URL,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(
+        mapRecordToHMS(record)
+      )
+    }
+  );
+
+  let result = {};
+
+  try {
+    result = await response.json();
+  } catch (error) {
+    result = {};
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      result && result.error
+        ? result.error
+        : 'HMS sync failed with HTTP ' + response.status + '.'
+    );
+  }
+
+  return result;
+}
+
+
+async function postBatchHMS(records) {
+  const results = [];
+
+  for (const record of records) {
+    try {
+      const serverInfo =
+        await postOneRecordHMS(record);
+
+      results.push({
+        record: record,
+        ok: true,
+        serverInfo: serverInfo
+      });
+    } catch (error) {
+      results.push({
+        record: record,
+        ok: false,
+        error:
+          error && error.message
+            ? error.message
+            : String(error)
+      });
+    }
+  }
+
+  return results;
+}
+
+
+async function pingHMSServer(showMessage) {
+  if (!navigator.onLine) {
+    setServerStatus(
+      false,
+      'HMS Sync: Offline'
+    );
+    return false;
+  }
+
+  try {
+    const response = await fetch(
+      HMS_URL,
+      {
+        method: 'OPTIONS',
+        cache: 'no-store'
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        'HMS returned HTTP ' + response.status + '.'
+      );
+    }
+
+    setServerStatus(
+      true,
+      'HMS Sync: Connected'
+    );
+
+    if (showMessage) {
+      showSuccess(
+        'HMS connection is working.'
+      );
+    }
+
+    return true;
+
+  } catch (error) {
+    setServerStatus(
+      false,
+      'HMS Sync: Not Connected'
+    );
+
+    if (showMessage) {
+      showError(error);
+    }
+
+    return false;
+  }
+}
+
+
 async function markRecordSyncedV71(
   record,
   serverInfo
@@ -2358,6 +2602,16 @@ async function markRecordSyncedV71(
     serverInfo.serialNo
       ? serverInfo.serialNo
       : '';
+
+  record.hmsId =
+    serverInfo && serverInfo.id
+      ? serverInfo.id
+      : (record.hmsId || '');
+
+  record.registerNumber =
+    serverInfo && serverInfo.registerNumber
+      ? serverInfo.registerNumber
+      : (record.registerNumber || '');
 
   record.lastError =
     '';
@@ -2391,63 +2645,31 @@ async function processBatchV71(
   session,
   batch
 ) {
-  const batchSessionId =
-    session.id +
-    '-batch-' +
-    Date.now() +
-    '-' +
-    Math.random()
-      .toString(36)
-      .slice(2);
+  const results =
+    await postBatchHMS(batch);
 
-  await postBatchV71(
-    batchSessionId,
-    batch
-  );
+  let synced = 0;
+  let failed = 0;
 
-  const confirmation =
-    await waitForBatchV7(
-      batchSessionId
-    );
-
-  const failed =
-    batchNumberV7(
-      confirmation,
-      'failed'
-    );
-
-  if (
-    failed > 0
-  ) {
-    for (
-      const record
-      of batch
-    ) {
-      await markRecordPendingErrorV71(
-        record,
-        'SERVER: Google completed the batch but reported failed record(s). This batch remains pending for safety.'
+  for (const item of results) {
+    if (item.ok) {
+      await markRecordSyncedV71(
+        item.record,
+        item.serverInfo || {}
       );
+      synced++;
+    } else {
+      await markRecordPendingErrorV71(
+        item.record,
+        'HMS: ' + (item.error || 'Synchronization failed.')
+      );
+      failed++;
     }
-
-    return {
-      synced: 0,
-      failed: batch.length
-    };
-  }
-
-  for (
-    const record
-    of batch
-  ) {
-    await markRecordSyncedV71(
-      record,
-      {}
-    );
   }
 
   return {
-    synced: batch.length,
-    failed: 0
+    synced: synced,
+    failed: failed
   };
 }
 
@@ -2484,11 +2706,11 @@ async function syncAll(
 
   try {
     const connected =
-      await pingServer(false);
+      await pingHMSServer(false);
 
     if (!connected) {
       throw new Error(
-        'TRANSPORT: Google Apps Script is not reachable.'
+        'TRANSPORT: HMS server is not reachable.'
       );
     }
 
@@ -2675,7 +2897,7 @@ async function syncAll(
       showSuccess(
         'Sync complete. ' +
         synced +
-        ' record(s) confirmed by Google Sheets.'
+        ' record(s) confirmed by HMS.'
       );
     } else {
       showError(
@@ -3147,7 +3369,7 @@ async function renderPending() {
 
           if (
             !confirm(
-              'Remove this unsynced local patient? Only do this if you have confirmed it already exists in Google Sheets.'
+              'Remove this unsynced local patient? Only do this if you have confirmed it already exists in HMS.'
             )
           ) {
             return;
