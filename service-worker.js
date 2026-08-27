@@ -1,6 +1,7 @@
-const CACHE_NAME = "qcnm-opd-v2";
+const CACHE_NAME = "qcnm-opd-shell-v1";
 
-const FILES_TO_CACHE = [
+const APP_SHELL = [
+  "./index.html",
   "./manifest.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png"
@@ -8,47 +9,67 @@ const FILES_TO_CACHE = [
 
 
 self.addEventListener(
-"fetch",
+"install",
 event => {
 
-event.respondWith(
+ event.waitUntil(
 
-fetch(event.request)
+  caches.open(CACHE_NAME)
+  .then(cache =>
+    cache.addAll(APP_SHELL)
+  )
 
-.catch(
-() =>
-caches.match(
-event.request
-)
-)
+ );
 
-);
+ self.skipWaiting();
 
 });
 
 
 
 self.addEventListener(
-  "fetch",
-  event => {
+"activate",
+event => {
 
-    event.respondWith(
+ event.waitUntil(
+  self.clients.claim()
+ );
 
+});
+
+
+
+self.addEventListener(
+"fetch",
+event => {
+
+
+ event.respondWith(
+
+  fetch(event.request)
+
+  .then(response => {
+
+    return response;
+
+  })
+
+  .catch(() => {
+
+    return caches.match(
+      event.request
+    )
+    .then(cached => {
+
+      return cached ||
       caches.match(
-        event.request
-      )
-      .then(
-        response => {
+        "./index.html"
+      );
 
-          return response ||
-          fetch(
-            event.request
-          );
+    });
 
-        }
-      )
+  })
 
-    );
+ );
 
-  }
-);
+});
